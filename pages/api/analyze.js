@@ -1,26 +1,28 @@
-// pages/api/an
 import axios from "axios";
 
 export default async function handler(req, res) {
-  const { symbol, price, changePercent } = req.body;
-
-  if (!symbol) {
-    return res.status(400).json({ status: "error", message: "Missing stock symbol" });
-  }
-
   try {
-    const resp = await axios.post(
+    const { symbol } = req.body;
+
+    if (!symbol) {
+      return res.status(400).json({ status: "error", message: "Symbol is required" });
+    }
+
+    const response = await axios.post(
       "https://api.perplexity.ai/chat/completions",
       {
-        model: "sonar-medium-online",
+        model: "sonar-pro",
         messages: [
           {
-            role: "system",
-            content: "You are an Indian stock market analyst. Give clear buy/hold/sell recommendation with confidence %."
-          },
-          {
             role: "user",
-            content: `Analyze ${symbol} (NSE). Current price: ₹${price}, change: ${changePercent.toFixed(2)}%. Provide a concise recommendation and confidence level.`
+            content: `Analyze the Indian stock ${symbol} (NSE). Return JSON only with:
+            {
+              "symbol": "${symbol}",
+              "latest": { "price": number, "previous_close": number, "high": number, "low": number, "volume": number },
+              "recent_closes": [numbers up to last 60 days],
+              "recommendation": "Buy / Hold / Sell",
+              "confidence": number (0-100)
+            }`
           }
         ]
       },
@@ -28,15 +30,29 @@ export default async function handler(req, res) {
         headers: {
           "Authorization": `Bearer ${process.env.PERPLEXITY_API_KEY}`,
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 20000
       }
     );
 
-    const recommendation = resp.data.choices?.[0]?.message?.content || "No recommendation";
+    // The AI output usually comes in response.data.choices[0].message.content
+    const content = response.data?.choices?.[0]?.message?.content;
+    if (!content) {
+      return res.status(500).json({ status: "error", message: "No response from AI" });
+    }
 
-    res.status(200).json({ status: "ok", recommendation });
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ status: "error", message: "Analysis failed", error: error.message });
+    // Try to parse JSON safely
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = { symbol, latest: {}, recent_closes: [], recommendation: "N/A", confidence: 0 };
+    }
+
+    res.status(200).json(parsed);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: "error", message: err.message });
   }
 }
