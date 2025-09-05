@@ -6,19 +6,19 @@ const IndianStockAdvisor = () => {
     {
       id: 1,
       type: 'assistant',
-      content: 'Namaste! 🇮🇳 Welcome to your Indian Stock Market Advisor. I can help you with:\n\n📈 Top stock recommendations\n💰 Stock analysis and financials\n🔥 Latest IPO updates\n📰 Market news and trends\n📊 Investment strategies\n\nPowered by: Claude AI • Perplexity Pro • Gemini 1.5\n\nWhat would you like to know about the Indian stock market today?',
+      content: 'Namaste! 🇮🇳 Welcome to your Indian Stock Market Advisor. I can help you with:\n\n📈 Top stock recommendations\n💰 Stock analysis and financials\n🔥 Latest IPO updates\n📰 Market news and trends\n📊 Investment strategies\n\nPowered by: Perplexity Pro • Gemini 1.5\n\nWhat would you like to know about the Indian stock market today?',
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAPI, setSelectedAPI] = useState('claude');
+  const [selectedAPI, setSelectedAPI] = useState('perplexity'); // Default to Perplexity
   const [showSettings, setShowSettings] = useState(false);
-  const [apiKeys, setApiKeys] = useState({
-    perplexity: '',
-    gemini: ''
-  });
   const messagesEndRef = useRef(null);
+
+  // Retrieve API keys from environment variables
+  const PERPLEXITY_API_KEY = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
+  const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,6 +27,15 @@ const IndianStockAdvisor = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Set default API based on availability
+    if (PERPLEXITY_API_KEY) {
+      setSelectedAPI('perplexity');
+    } else if (GEMINI_API_KEY) {
+      setSelectedAPI('gemini');
+    }
+  }, [PERPLEXITY_API_KEY, GEMINI_API_KEY]);
 
   const quickQuestions = [
     'Top 5 stocks to buy today',
@@ -40,14 +49,14 @@ const IndianStockAdvisor = () => {
   // Perplexity Pro API call
   const getPerplexityAdvice = async (userMessage) => {
     try {
-      if (!apiKeys.perplexity) {
-        return 'Perplexity Pro API key is not configured. Please add your API key in the settings panel or use Claude AI for analysis.';
+      if (!PERPLEXITY_API_KEY) {
+        return 'Perplexity Pro API key is not configured. Please use Gemini for analysis.';
       }
 
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKeys.perplexity}`,
+          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -90,18 +99,18 @@ const IndianStockAdvisor = () => {
       return advice;
     } catch (error) {
       console.error('Perplexity API Error:', error);
-      return 'Unable to fetch data from Perplexity Pro. Please check your API key or try again later.';
+      return 'Unable to fetch data from Perplexity Pro. Please check the API key configuration or try again later.';
     }
   };
 
   // Gemini 1.5 Pro API call
   const getGeminiAdvice = async (userMessage) => {
     try {
-      if (!apiKeys.gemini) {
-        return 'Gemini 1.5 Pro API key is not configured. Please add your API key in the settings panel or use Claude AI for analysis.';
+      if (!GEMINI_API_KEY) {
+        return 'Gemini 1.5 Pro API key is not configured. Please use Perplexity for analysis.';
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKeys.gemini}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,73 +180,7 @@ Please provide actionable, data-driven advice with specific stock names, target 
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
       console.error('Gemini API Error:', error);
-      return 'Unable to fetch data from Gemini 1.5 Pro. Please check your API key or try again later.';
-    }
-  };
-
-  // Claude API call
-  const getClaudeAdvice = async (userMessage) => {
-    try {
-      const prompt = `You are an expert Indian stock market advisor. The user is asking: "${userMessage}"
-
-Please provide comprehensive advice following these guidelines:
-
-1. If asking about top stocks or recommendations:
-   - Provide 5-7 specific Indian stocks with reasoning
-   - Include NSE/BSE symbols
-   - Mention current price ranges and key metrics
-   - Explain why each stock is recommended
-   - Include risk assessment
-
-2. If asking about IPOs:
-   - List recent and upcoming IPOs
-   - Provide subscription details, price bands
-   - Give investment recommendation with rationale
-
-3. If asking about market analysis:
-   - Cover Nifty 50, Sensex trends
-   - Mention key sectors performing well/poorly
-   - Include global factors affecting Indian markets
-
-4. If asking about specific stocks:
-   - Provide fundamental analysis
-   - Technical outlook
-   - Financial metrics (P/E, ROE, debt levels)
-   - Future prospects
-
-5. Always include:
-   - Risk disclaimers
-   - Diversification advice
-   - Market timing considerations
-
-Please provide actionable, well-researched advice based on current market conditions. Be specific with stock names, numbers, and rationale.
-
-Response format: Use clear sections with headings, bullet points for key information, and conclude with risk warnings.`;
-
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 2000,
-          messages: [
-            { role: "user", content: prompt }
-          ]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.content[0].text;
-
-    } catch (error) {
-      console.error('Claude API Error:', error);
-      return 'I apologize, but I encountered an issue while fetching market data. Please try again or ask a different question about the Indian stock market.';
+      return 'Unable to fetch data from Gemini 1.5 Pro. Please check the API key configuration or try again later.';
     }
   };
 
@@ -254,9 +197,8 @@ Response format: Use clear sections with headings, bullet points for key informa
         case 'gemini':
           advice = await getGeminiAdvice(userMessage);
           break;
-        case 'claude':
         default:
-          advice = await getClaudeAdvice(userMessage);
+          advice = 'Please select an available AI provider to get advice.';
           break;
       }
     } catch (error) {
@@ -306,16 +248,14 @@ Response format: Use clear sections with headings, bullet points for key informa
   };
 
   const getApiStatus = () => {
-    if (selectedAPI === 'claude') return 'Ready';
-    if (selectedAPI === 'perplexity' && apiKeys.perplexity) return 'Ready';
-    if (selectedAPI === 'gemini' && apiKeys.gemini) return 'Ready';
-    return 'API Key Required';
+    if (selectedAPI === 'perplexity' && PERPLEXITY_API_KEY) return 'Ready';
+    if (selectedAPI === 'gemini' && GEMINI_API_KEY) return 'Ready';
+    return 'API Key Not Found';
   };
 
   const isApiReady = () => {
-    if (selectedAPI === 'claude') return true;
-    if (selectedAPI === 'perplexity' && apiKeys.perplexity) return true;
-    if (selectedAPI === 'gemini' && apiKeys.gemini) return true;
+    if (selectedAPI === 'perplexity' && PERPLEXITY_API_KEY) return true;
+    if (selectedAPI === 'gemini' && GEMINI_API_KEY) return true;
     return false;
   };
 
@@ -356,23 +296,13 @@ Response format: Use clear sections with headings, bullet points for key informa
                 <input
                   type="radio"
                   name="api"
-                  value="claude"
-                  checked={selectedAPI === 'claude'}
-                  onChange={(e) => setSelectedAPI(e.target.value)}
-                  className="text-blue-600"
-                />
-                <span className="text-sm">Claude AI</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name="api"
                   value="perplexity"
                   checked={selectedAPI === 'perplexity'}
                   onChange={(e) => setSelectedAPI(e.target.value)}
                   className="text-blue-600"
+                  disabled={!PERPLEXITY_API_KEY}
                 />
-                <span className="text-sm">Perplexity Pro</span>
+                <span className={`text-sm ${!PERPLEXITY_API_KEY ? 'text-gray-400' : ''}`}>Perplexity Pro</span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
@@ -382,33 +312,10 @@ Response format: Use clear sections with headings, bullet points for key informa
                   checked={selectedAPI === 'gemini'}
                   onChange={(e) => setSelectedAPI(e.target.value)}
                   className="text-blue-600"
+                  disabled={!GEMINI_API_KEY}
                 />
-                <span className="text-sm">Gemini 1.5 Pro</span>
+                <span className={`text-sm ${!GEMINI_API_KEY ? 'text-gray-400' : ''}`}>Gemini 1.5 Pro</span>
               </label>
-            </div>
-
-            {/* API Key Configuration */}
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Perplexity Pro API Key:</label>
-                <input
-                  type="password"
-                  value={apiKeys.perplexity}
-                  onChange={(e) => setApiKeys(prev => ({ ...prev, perplexity: e.target.value }))}
-                  placeholder="Enter your Perplexity API key"
-                  className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Gemini 1.5 Pro API Key:</label>
-                <input
-                  type="password"
-                  value={apiKeys.gemini}
-                  onChange={(e) => setApiKeys(prev => ({ ...prev, gemini: e.target.value }))}
-                  placeholder="Enter your Gemini API key"
-                  className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
             </div>
 
             <div className="text-xs text-gray-600">
@@ -420,9 +327,8 @@ Response format: Use clear sections with headings, bullet points for key informa
                 </span>
               </div>
               <div className="mt-2 text-xs text-gray-500">
-                <p>• Perplexity Pro: Real-time market data with citations</p>
-                <p>• Gemini 1.5: Advanced AI analysis with large context</p>
-                <p>• Claude AI: Reliable baseline (no API key needed)</p>
+                <p>• Perplexity Pro: Real-time market data with citations (Requires API Key in Vercel Environment Variables)</p>
+                <p>• Gemini 1.5: Advanced AI analysis with large context (Requires API Key in Vercel Environment Variables)</p>
               </div>
             </div>
           </div>
@@ -463,8 +369,7 @@ Response format: Use clear sections with headings, bullet points for key informa
                 <div className="flex items-center space-x-2 mb-2">
                   <BarChart3 className="w-4 h-4 text-green-600" />
                   <span className="text-sm font-medium text-green-600">
-                    {selectedAPI === 'perplexity' ? 'Perplexity Pro' :
-                     selectedAPI === 'gemini' ? 'Gemini 1.5' : 'Claude AI'} Market Advisor
+                    {selectedAPI === 'perplexity' ? 'Perplexity Pro' : 'Gemini 1.5'} Market Advisor
                   </span>
                 </div>
               )}
@@ -484,16 +389,13 @@ Response format: Use clear sections with headings, bullet points for key informa
               <div className="flex items-center space-x-2 mb-2">
                 <BarChart3 className="w-4 h-4 text-green-600" />
                 <span className="text-sm font-medium text-green-600">
-                  {selectedAPI === 'perplexity' ? 'Perplexity Pro' :
-                   selectedAPI === 'gemini' ? 'Gemini 1.5' : 'Claude AI'} Market Advisor
+                  {selectedAPI === 'perplexity' ? 'Perplexity Pro' : 'Gemini 1.5'} Market Advisor
                 </span>
               </div>
               <div className="flex items-center space-x-2 text-gray-600">
                 <Loader className="w-4 h-4 animate-spin" />
                 <span className="text-sm">
-                  {selectedAPI === 'perplexity' ? 'Searching real-time market data...' :
-                   selectedAPI === 'gemini' ? 'Analyzing with Gemini 1.5...' :
-                   'Analyzing market data...'}
+                  {selectedAPI === 'perplexity' ? 'Searching real-time market data...' : 'Analyzing with Gemini 1.5...'}
                 </span>
               </div>
             </div>
@@ -515,11 +417,11 @@ Response format: Use clear sections with headings, bullet points for key informa
                 placeholder="Ask about stocks, IPOs, market analysis, or investment advice..."
                 className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows="2"
-                disabled={isLoading}
+                disabled={isLoading || !isApiReady()}
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
+                disabled={!inputMessage.trim() || isLoading || !isApiReady()}
                 className="absolute right-2 bottom-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />
