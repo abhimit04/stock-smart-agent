@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, TrendingUp, BarChart3, AlertCircle, Loader, Settings, Database } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 const IndianStockAdvisor = () => {
   const [messages, setMessages] = useState([
@@ -282,7 +283,7 @@ Please provide actionable, data-driven advice with specific stock names, target 
             </button>
             <div className="flex items-center space-x-2 text-green-600">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Market Open</span>
+//              <span className="text-sm font-medium">Market Open</span>
             </div>
           </div>
         </div>
@@ -374,7 +375,7 @@ Please provide actionable, data-driven advice with specific stock names, target 
                 </div>
               )}
               <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                {message.content}
+                <ReactMarkdown>{message.content}</ReactMarkdown>
               </div>
               <div className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
                 {message.timestamp.toLocaleTimeString()}
