@@ -1,51 +1,39 @@
 import React, { useState } from "react";
 
 export default function Home() {
-  const [symbol, setSymbol] = useState("TCS");
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [symbol, setSymbol] = useState("TCS");
+  const [previousClose, setPreviousClose] = useState(3495.50); // Example previous close
 
   const analyzeStock = async () => {
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol })
-      });
-      const data = await res.json();
-      setResult(data);
-    } catch (err) {
-      console.error(err);
-      setResult({ error: err.message });
-    }
-    setLoading(false);
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol, previous_close: previousClose }),
+    });
+    const data = await res.json();
+    setResult(data);
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Stock Market AI Agent</h1>
+      <h1 className="text-xl font-bold">Stock Market AI Agent</h1>
 
-      <input
-        type="text"
-        value={symbol}
-        onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-        className="border p-2 mr-2"
-        placeholder="Enter NSE symbol"
-      />
-      <button
-        onClick={analyzeStock}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
-      >
-        Analyze
-      </button>
-
-      {loading && <p>Analyzing {symbol}...</p>}
+      <div className="mt-4">
+        <button
+          onClick={analyzeStock}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Analyze
+        </button>
+      </div>
 
       {result && (
         <div className="mt-4 p-4 bg-slate-800 rounded">
-          <pre>{JSON.stringify(result, null, 2)}</pre>
+          <p>Symbol: {result.symbol}</p>
+          <p>Previous Close: ₹{result.previous_close}</p>
+          <p>Recommendation: {result.recommendation || "N/A"}</p>
+          <p>Confidence: {result.confidence || 0}%</p>
         </div>
       )}
     </div>
