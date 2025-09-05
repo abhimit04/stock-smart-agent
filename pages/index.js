@@ -1,3 +1,4 @@
+//react ode
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, TrendingUp, DollarSign, BarChart3, AlertCircle, Loader } from 'lucide-react';
 
