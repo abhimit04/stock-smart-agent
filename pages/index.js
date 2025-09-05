@@ -1,18 +1,23 @@
-//react ode
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, TrendingUp, DollarSign, BarChart3, AlertCircle, Loader } from 'lucide-react';
+import { Send, TrendingUp, BarChart3, AlertCircle, Loader, Settings, Database } from 'lucide-react';
 
 const IndianStockAdvisor = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'assistant',
-      content: 'Namaste! 🇮🇳 Welcome to your Indian Stock Market Advisor. I can help you with:\n\n📈 Top stock recommendations\n💰 Stock analysis and financials\n🔥 Latest IPO updates\n📰 Market news and trends\n📊 Investment strategies\n\nWhat would you like to know about the Indian stock market today?',
+      content: 'Namaste! 🇮🇳 Welcome to your Indian Stock Market Advisor. I can help you with:\n\n📈 Top stock recommendations\n💰 Stock analysis and financials\n🔥 Latest IPO updates\n📰 Market news and trends\n📊 Investment strategies\n\nPowered by: Claude AI • Perplexity Pro • Gemini 1.5\n\nWhat would you like to know about the Indian stock market today?',
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedAPI, setSelectedAPI] = useState('claude');
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeys, setApiKeys] = useState({
+    perplexity: '',
+    gemini: ''
+  });
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -32,11 +37,147 @@ const IndianStockAdvisor = () => {
     'Banking sector outlook'
   ];
 
-  const getStockAdvice = async (userMessage) => {
+  // Perplexity Pro API call
+  const getPerplexityAdvice = async (userMessage) => {
     try {
-      setIsLoading(true);
+      if (!apiKeys.perplexity) {
+        return 'Perplexity Pro API key is not configured. Please add your API key in the settings panel or use Claude AI for analysis.';
+      }
 
-      // Create a comprehensive prompt for stock market analysis
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKeys.perplexity}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-sonar-huge-128k-online',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert Indian stock market advisor with access to real-time data. Provide comprehensive, well-researched advice on Indian stocks, IPOs, market trends, and investment strategies. Always include current market data, specific stock recommendations with NSE/BSE symbols, and risk assessments.'
+            },
+            {
+              role: 'user',
+              content: `Regarding Indian stock market: ${userMessage}\n\nPlease provide detailed analysis with current market data, specific stock names, price targets, and actionable investment advice.`
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.2,
+          top_p: 0.9,
+          return_citations: true,
+          search_domain_filter: ['moneycontrol.com', 'economictimes.indiatimes.com', 'livemint.com', 'nseindia.com', 'bseindia.com'],
+          return_images: false,
+          return_related_questions: false,
+          search_recency_filter: 'month'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      let advice = data.choices[0].message.content;
+
+      if (data.citations && data.citations.length > 0) {
+        advice += '\n\n**Sources:**\n';
+        data.citations.forEach((citation, index) => {
+          advice += `${index + 1}. ${citation}\n`;
+        });
+      }
+
+      return advice;
+    } catch (error) {
+      console.error('Perplexity API Error:', error);
+      return 'Unable to fetch data from Perplexity Pro. Please check your API key or try again later.';
+    }
+  };
+
+  // Gemini 1.5 Pro API call
+  const getGeminiAdvice = async (userMessage) => {
+    try {
+      if (!apiKeys.gemini) {
+        return 'Gemini 1.5 Pro API key is not configured. Please add your API key in the settings panel or use Claude AI for analysis.';
+      }
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKeys.gemini}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are an expert Indian stock market advisor. The user is asking: "${userMessage}"
+
+Please provide comprehensive advice following these guidelines:
+
+1. If asking about top stocks or recommendations:
+   - Provide 5-7 specific Indian stocks with reasoning
+   - Include NSE/BSE symbols and current price ranges
+   - Explain fundamental and technical analysis
+   - Include risk assessment and sector analysis
+
+2. If asking about IPOs:
+   - List recent and upcoming IPOs with subscription details
+   - Provide price bands and investment recommendations
+   - Analyze company fundamentals and market positioning
+
+3. If asking about market analysis:
+   - Cover Nifty 50, Sensex trends with technical levels
+   - Mention key sectors and their performance
+   - Include global factors affecting Indian markets
+   - Provide FII/DII flow analysis
+
+4. If asking about specific stocks:
+   - Fundamental analysis (P/E, ROE, ROA, Debt/Equity)
+   - Technical analysis with support/resistance levels
+   - Financial metrics and growth prospects
+   - Peer comparison and sector outlook
+
+5. Always include:
+   - Risk disclaimers and diversification advice
+   - Market timing considerations
+   - Investment horizon recommendations
+
+Please provide actionable, data-driven advice with specific stock names, target prices, and clear rationale.`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.8,
+            maxOutputTokens: 2048,
+          },
+          safetySettings: [
+            {
+              category: 'HARM_CATEGORY_HARASSMENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            },
+            {
+              category: 'HARM_CATEGORY_HATE_SPEECH',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates[0].content.parts[0].text;
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      return 'Unable to fetch data from Gemini 1.5 Pro. Please check your API key or try again later.';
+    }
+  };
+
+  // Claude API call
+  const getClaudeAdvice = async (userMessage) => {
+    try {
       const prompt = `You are an expert Indian stock market advisor. The user is asking: "${userMessage}"
 
 Please provide comprehensive advice following these guidelines:
@@ -92,16 +233,40 @@ Response format: Use clear sections with headings, bullet points for key informa
       }
 
       const data = await response.json();
-      const advice = data.content[0].text;
-
-      return advice;
+      return data.content[0].text;
 
     } catch (error) {
-      console.error('Error getting stock advice:', error);
+      console.error('Claude API Error:', error);
       return 'I apologize, but I encountered an issue while fetching market data. Please try again or ask a different question about the Indian stock market.';
+    }
+  };
+
+  // Main function to get stock advice based on selected API
+  const getStockAdvice = async (userMessage) => {
+    setIsLoading(true);
+
+    let advice;
+    try {
+      switch (selectedAPI) {
+        case 'perplexity':
+          advice = await getPerplexityAdvice(userMessage);
+          break;
+        case 'gemini':
+          advice = await getGeminiAdvice(userMessage);
+          break;
+        case 'claude':
+        default:
+          advice = await getClaudeAdvice(userMessage);
+          break;
+      }
+    } catch (error) {
+      console.error('Error getting stock advice:', error);
+      advice = 'I apologize, but I encountered an issue while fetching market data. Please try again or switch to a different AI provider.';
     } finally {
       setIsLoading(false);
     }
+
+    return advice;
   };
 
   const handleSendMessage = async () => {
@@ -117,7 +282,6 @@ Response format: Use clear sections with headings, bullet points for key informa
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
 
-    // Get AI response
     const advice = await getStockAdvice(userMessage.content);
 
     const assistantMessage = {
@@ -141,6 +305,20 @@ Response format: Use clear sections with headings, bullet points for key informa
     }
   };
 
+  const getApiStatus = () => {
+    if (selectedAPI === 'claude') return 'Ready';
+    if (selectedAPI === 'perplexity' && apiKeys.perplexity) return 'Ready';
+    if (selectedAPI === 'gemini' && apiKeys.gemini) return 'Ready';
+    return 'API Key Required';
+  };
+
+  const isApiReady = () => {
+    if (selectedAPI === 'claude') return true;
+    if (selectedAPI === 'perplexity' && apiKeys.perplexity) return true;
+    if (selectedAPI === 'gemini' && apiKeys.gemini) return true;
+    return false;
+  };
+
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-blue-50 to-green-50">
       {/* Header */}
@@ -152,14 +330,103 @@ Response format: Use clear sections with headings, bullet points for key informa
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-800">Indian Stock Market Advisor</h1>
-              <p className="text-sm text-gray-600">Real-time insights • NSE & BSE</p>
+              <p className="text-sm text-gray-600">Real-time insights • NSE & BSE • Powered by {selectedAPI.charAt(0).toUpperCase() + selectedAPI.slice(1)}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 text-green-600">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium">Market Open</span>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <div className="flex items-center space-x-2 text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">Market Open</span>
+            </div>
           </div>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="p-4 bg-gray-50 border-t">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">AI Provider Selection</h3>
+            <div className="flex space-x-4 mb-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="api"
+                  value="claude"
+                  checked={selectedAPI === 'claude'}
+                  onChange={(e) => setSelectedAPI(e.target.value)}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Claude AI</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="api"
+                  value="perplexity"
+                  checked={selectedAPI === 'perplexity'}
+                  onChange={(e) => setSelectedAPI(e.target.value)}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Perplexity Pro</span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  name="api"
+                  value="gemini"
+                  checked={selectedAPI === 'gemini'}
+                  onChange={(e) => setSelectedAPI(e.target.value)}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Gemini 1.5 Pro</span>
+              </label>
+            </div>
+
+            {/* API Key Configuration */}
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Perplexity Pro API Key:</label>
+                <input
+                  type="password"
+                  value={apiKeys.perplexity}
+                  onChange={(e) => setApiKeys(prev => ({ ...prev, perplexity: e.target.value }))}
+                  placeholder="Enter your Perplexity API key"
+                  className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Gemini 1.5 Pro API Key:</label>
+                <input
+                  type="password"
+                  value={apiKeys.gemini}
+                  onChange={(e) => setApiKeys(prev => ({ ...prev, gemini: e.target.value }))}
+                  placeholder="Enter your Gemini API key"
+                  className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-600">
+              <div className="flex items-center space-x-1">
+                <Database className="w-3 h-3" />
+                <span>API Status: </span>
+                <span className={`font-medium ${isApiReady() ? 'text-green-600' : 'text-red-600'}`}>
+                  {getApiStatus()}
+                </span>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                <p>• Perplexity Pro: Real-time market data with citations</p>
+                <p>• Gemini 1.5: Advanced AI analysis with large context</p>
+                <p>• Claude AI: Reliable baseline (no API key needed)</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Questions */}
@@ -195,7 +462,10 @@ Response format: Use clear sections with headings, bullet points for key informa
               {message.type === 'assistant' && (
                 <div className="flex items-center space-x-2 mb-2">
                   <BarChart3 className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">Market Advisor</span>
+                  <span className="text-sm font-medium text-green-600">
+                    {selectedAPI === 'perplexity' ? 'Perplexity Pro' :
+                     selectedAPI === 'gemini' ? 'Gemini 1.5' : 'Claude AI'} Market Advisor
+                  </span>
                 </div>
               )}
               <div className="whitespace-pre-wrap text-sm leading-relaxed">
