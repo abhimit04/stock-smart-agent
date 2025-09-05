@@ -27,7 +27,7 @@ async function queryPerplexity(prompt) {
   try {
     const r = await axios.post(PERP_URL, { query: prompt }, {
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      timeout: 20000
+      timeout: 60000
     });
     return r.data;
   } catch (err) {
