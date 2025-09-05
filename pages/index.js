@@ -1,73 +1,53 @@
-import React, { useEffect, useState } from "react";
-import { TrendingUp, Brain } from "lucide-react";
+import React, { useState } from "react";
 
 export default function Home() {
-  const [stocks, setStocks] = useState([]);
+  const [symbol, setSymbol] = useState("TCS");
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch stock data (replace this with your Indian stock API)
-  useEffect(() => {
-    fetch("/api/stocks") // your API route returning stock list
-      .then(res => res.json())
-      .then(async data => {
-        const parsed = Object.keys(data).map(symbol => ({
-          symbol,
-          name: symbol,
-          price: data[symbol].last_price,
-          changePercent: data[symbol].ohlc?.close
-            ? ((data[symbol].last_price - data[symbol].ohlc.close) / data[symbol].ohlc.close) * 100
-            : 0,
-          recommendation: null,
-        }));
-        setStocks(parsed);
-
-        // Fetch AI recommendations for each stock
-        setLoading(true);
-        const updatedStocks = await Promise.all(
-          parsed.map(async stock => {
-            try {
-              const resp = await fetch("/api/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  symbol: stock.symbol,
-                  price: stock.price,
-                  changePercent: stock.changePercent,
-                }),
-              });
-              const result = await resp.json();
-              return { ...stock, recommendation: result.recommendation };
-            } catch {
-              return { ...stock, recommendation: "Analysis failed" };
-            }
-          })
-        );
-        setStocks(updatedStocks);
-        setLoading(false);
-      })
-      .catch(console.error);
-  }, []);
+  const analyzeStock = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol })
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      console.error(err);
+      setResult({ error: err.message });
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold flex items-center gap-2">
-        <TrendingUp /> Stock Market AI Agent
-      </h1>
+      <h1 className="text-xl font-bold mb-4">Stock Market AI Agent</h1>
 
-      {loading && <p className="mt-2">Analyzing stocks...</p>}
+      <input
+        type="text"
+        value={symbol}
+        onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+        className="border p-2 mr-2"
+        placeholder="Enter NSE symbol"
+      />
+      <button
+        onClick={analyzeStock}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        Analyze
+      </button>
 
-      <ul className="mt-4 space-y-2">
-        {stocks.map((s, i) => (
-          <li key={i} className="p-2 rounded bg-slate-800">
-            <div>
-              {s.symbol} — ₹{s.price.toFixed(2)} ({s.changePercent.toFixed(2)}%)
-            </div>
-            <div className="mt-1 text-sm text-green-400">
-              Recommendation: {s.recommendation || "Pending..."}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {loading && <p>Analyzing {symbol}...</p>}
+
+      {result && (
+        <div className="mt-4 p-4 bg-slate-800 rounded">
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </div>
+      )}
     </div>
   );
 }
