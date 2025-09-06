@@ -35,24 +35,7 @@ export default async function handler(req, res) {
       console.error("Perplexity Pro Error:", err);
     }
 
-    // 3️⃣ Gemini Flash: Structured summary
-//    let geminiSummary = "No Gemini summary";
-//    try {
-//      const geminiRes = await fetch(
-//        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GOOGLE_API_KEY}`,
-//        {
-//          method: "POST",
-//          headers: { "Content-Type": "application/json" },
-//          body: JSON.stringify({
-//            contents: [{ parts: [{ text: `Summarize this stock analysis:\n\n${topLinks}\nOutput as:\n- 📌 Recommendation\n- 📊 Confidence (0–100)\n- 🔑 3 Key Reasons\n- ⚠️ Risks` }] }],
-//          }),
-//        }
-//      );
-//      const geminiData = await geminiRes.json();
-//      geminiSummary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || geminiSummary;
-//    } catch (err) {
-//      console.error("Gemini Flash Error:", err);
-//    }
+
 
     // 4️⃣ Quick summary using Perplexity small
     let perplexitySummary = "No quick summary";
@@ -84,11 +67,6 @@ export default async function handler(req, res) {
 
 ### ⚡ Quick Summary
 ${perplexitySummary}
-
----
-
-//### 🤖 Gemini Structured Summary
-//${geminiSummary}
 
 ---
 
