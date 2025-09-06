@@ -7,7 +7,7 @@ export async function fetchStockNews(query) {
     if (!SERP_API_KEY) throw new Error("SERPAPI_KEY not configured");
 
     const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
-      query + " stock site:moneycontrol.com OR site:economictimes.indiatimes.com OR site:livemint.com"
+      query + " stock site:moneycontrol.com OR site:economictimes.indiatimes.com OR site:angelone.in/news OR site:business-standard.com"
     )}&engine=google&api_key=${SERP_API_KEY}`;
 
     const response = await axios.get(url);
