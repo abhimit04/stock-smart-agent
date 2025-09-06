@@ -10,30 +10,30 @@ export default async function handler(req, res) {
     const topLinks = await fetchStockNews(query);
     console.log("Top Links:", topLinks);
     // 2️⃣ Perplexity Pro: Analyze links
-     //let rawAdvice = "No advice";
-//    try {
-//      const perplexityRes = await fetch("https://api.perplexity.ai/chat/completions", {
-//        method: "POST",
-//        headers: {
-//          Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-//          "Content-Type": "application/json",
-//        },
-//        body: JSON.stringify({
-//          model: "llama-3.1-sonar-huge-128k-online",
-//          messages: [
-//            { role: "system", content: "You are an Indian stock market expert." },
-//            { role: "user", content: `Analyze news about: ${query}\nLinks:\n${topLinks.join("\n")}` },
-//          ],
-//          max_tokens: 1500,
-//          temperature: 0.3,
-//          return_citations: true,
-//        }),
-//      });
-//      const perplexityData = await perplexityRes.json();
-//      rawAdvice = perplexityData.choices?.[0]?.message?.content || rawAdvice;
-//    } catch (err) {
-//      console.error("Perplexity Pro Error:", err);
-//    }
+     let rawAdvice = "No advice";
+    try {
+      const perplexityRes = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "sonar-pro",
+          messages: [
+            { role: "system", content: "You are an Indian stock market expert." },
+            { role: "user", content: `Analyze news about: ${query}\nLinks:\n${topLinks.join("\n")}` },
+          ],
+          max_tokens: 1500,
+          temperature: 0.3,
+          return_citations: true,
+        }),
+      });
+      const perplexityData = await perplexityRes.json();
+      rawAdvice = perplexityData.choices?.[0]?.message?.content || rawAdvice;
+    } catch (err) {
+      console.error("Perplexity Pro Error:", err);
+    }
 
     // 3️⃣ Gemini Flash: Structured summary
     let geminiSummary = "No Gemini summary";
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "llama-3.1-sonar-small-online",
+          model: "sonar-pro",
           messages: [
             { role: "system", content: "Summarize financial insights clearly as BUY/SELL/HOLD with one-line reasoning." },
             { role: "user", content: rawAdvice },
