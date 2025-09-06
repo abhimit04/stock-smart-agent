@@ -47,6 +47,15 @@ const IndianStockAdvisor = () => {
     'Market news today',
     'Banking sector outlook'
   ];
+  const fetchStockTips = async () => {
+    const res = await fetch("/api/stockTips", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: "TCS stock tips" })
+    });
+    const data = await res.json();
+    console.log(data);
+  };
 
   // Perplexity Pro API call
   const getPerplexityAdvice = async (userMessage) => {
