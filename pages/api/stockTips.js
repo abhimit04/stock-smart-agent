@@ -26,11 +26,13 @@ export default async function handler(req, res) {
           ],
           max_tokens: 1500,
           temperature: 0.3,
-          return_citations: true,
+          return_citations: false,
         }),
       });
       const perplexityData = await perplexityRes.json();
       rawAdvice = perplexityData.choices?.[0]?.message?.content || rawAdvice;
+      // Remove citation markers like [1], [2], etc.
+      //const cleanAdvice = rawAdvice.replace(/\[\d+\]/g, "");
     } catch (err) {
       console.error("Perplexity Pro Error:", err);
     }
