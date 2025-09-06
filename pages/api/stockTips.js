@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
     // 1️⃣ Get top links from Stock News
     const topLinks = await fetchStockNews(query);
-
+    console.log("Top Links:", topLinks);
     // 2️⃣ Perplexity Pro: Analyze links
     let rawAdvice = "No advice";
     try {
