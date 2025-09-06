@@ -82,7 +82,7 @@ export default async function handler(req, res) {
     const markdownResponse = `
 ## 📊 Stock Insights for: **${query}**
 
-### ⚡ Quick Summary (Perplexity Small)
+### ⚡ Quick Summary
 ${perplexitySummary}
 
 ---
@@ -92,7 +92,7 @@ ${geminiSummary}
 
 ---
 
-### 🧠 Detailed Market Analysis (Perplexity Pro)
+### 🧠 Detailed Market Analysis
 ${rawAdvice}
 
 ---
