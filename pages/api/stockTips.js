@@ -101,7 +101,7 @@ ${rawAdvice}
 ${topLinks.map((l, i) => `${i + 1}. [${l}](${l})`).join("\n")}
 `;
 
-    res.status(200).json({ markdown: markdownResponse, topLinks, rawAdvice, geminiSummary, quickSummary: perplexitySummary });
+    res.status(200).json({ markdown: markdownResponse, topLinks, rawAdvice, quickSummary: perplexitySummary });
   } catch (error) {
     console.error("Stock Tips API Error:", error);
     res.status(500).json({ error: "Failed to fetch stock insights", details: error.message });
