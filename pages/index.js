@@ -110,7 +110,7 @@ export default function Home() {
             <TrendingUp className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent mb-2">
-            Stock Market Advisor
+             Equity & Investments Advisor
           </h1>
           <p className="text-gray-400 text-lg">AI-powered insights for Indian equity markets</p>
         </div>
