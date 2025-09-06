@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, TrendingUp, BarChart3, AlertCircle, Loader, Settings, Database } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import '@/styles/global.css'
+import '@/styles/globals.css'
 
 const IndianStockAdvisor = () => {
   const [messages, setMessages] = useState([
